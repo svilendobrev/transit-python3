@@ -2,20 +2,21 @@
 # -*- coding: utf-8 -*-
 #from __future__ import print_function #,unicode_literals
 
+# average timings
 _pfxst= ("~#", "~$", "~:")
 _pfxsl= ["~#", "~$", "~:"]
 _pfxsd= dict.fromkeys( _pfxst)
 _lpfxst= _pfxst*20
 _lpfxsl= _pfxsl*20
 c_pfx_check = dict(
-    f_tuple=        lambda x: x[:2] in ("~#", "~$", "~:")   #.106
-  , f_list=         lambda x: x[:2] in ["~#", "~$", "~:"]   #.107
-  , f_tuple_global= lambda x: x[:2] in _pfxst               #.108
-  , f_list_global=  lambda x: x[:2] in _pfxsl               #.109
-  , f_dict_global=  lambda x: x[:2] in _pfxsd               #.097  fastest2
-  , f_tuple_global20= lambda x: x[:2] in _lpfxst            #.617
-  , f_list_global20=  lambda x: x[:2] in _lpfxsl            #.635
-  , f_one_by_one=   lambda x: x[0]=='~' and x[1] in "#$:"   #.059  fastest
+    f_tuple=        lambda x: x[:2] in ("~#", "~$", "~:")   #0.0864 %avg=216 # 3
+  , f_list=         lambda x: x[:2] in ["~#", "~$", "~:"]   #0.0868 %avg=217 # 4
+  , f_tuple_global= lambda x: x[:2] in _pfxst               #0.0886 %avg=222 # 5
+  , f_list_global=  lambda x: x[:2] in _pfxsl               #0.0912 %avg=228 # 6
+  , f_dict_global=  lambda x: x[:2] in _pfxsd               #0.0763 %avg=191 # 2
+  , f_tuple_global20= lambda x: x[:2] in _lpfxst            #0.6506 %avg=1630
+  , f_list_global20=  lambda x: x[:2] in _lpfxsl            #0.6340 %avg=1589
+  , f_one_by_one=   lambda x: x[0]=='~' and x[1] in "#$:"   #0.0399          # 1 fastest
     )
 if 0:
  from transit.rolling_cache import encode_i2key_map, encode_key, SUB, MAP_AS_ARR
@@ -34,8 +35,8 @@ def func1( x): return x and x != 'asd' and len(x)
 class klas1:
     func1 = staticmethod( func1)
 c_func_glob_vs_staticmethod= dict(
-    f_glob_func=   lambda x: func1(x)               # 83     fastest
-  , f_staticmethd= lambda x: klas1.func1(x)         # 97
+    f_glob_func=   lambda x: func1(x)               # 0.0695          fastest
+  , f_staticmethd= lambda x: klas1.func1(x)         # 0.0845 %avg=121
     )
 
 def for_loop(x):
@@ -43,25 +44,25 @@ def for_loop(x):
         if len(a)>9: return True
     return False
 c_for_loop_vs_gen_for = dict(
-    for_loop = lambda x: for_loop(x)                    #.177   fastest
-  , gen_loop = lambda x: any( [len(a)>9 for a in x ])   #.332
+    for_loop = lambda x: for_loop(x)                    #0.1882          fastest
+  , gen_loop = lambda x: any( [len(a)>9 for a in x ])   #0.2767 %avg=147
     )
 
 d = dict( a=1, b=2, c=35)
 d_get = d.get
 c_dictget_vs_dict_subscr = dict(
-    dictgetattr_get = lambda x: d.get(x)                # 75
-  , dictfuncget     = lambda x: d_get(x)                # 51    fastest?
-  , dictin_dictsubscr   = lambda x: x in d and d[x]     # 52    fastest?
-  , dictsubscr          = lambda x: d[ 'a']             # 45
+    dictgetattr_get = lambda x: d.get(x)                #0.0457 %avg=119
+  , dictfuncget     = lambda x: d_get(x)                #0.0430 %avg=112
+  , dictin_dictsubscr   = lambda x: x in d and d[x]     #0.0431 %avg=112
+  , dictsubscr          = lambda x: d[ 'a']             #0.0383          fastest
     )
 
 l = [ 1, 2, 3]
 l_get = l.__getitem__
 c_listget_vs_list_subscr = dict(
-    listgetattr_get = lambda x: l.__getitem__(len(x)%3) # 76
-  , listfuncget     = lambda x: l_get(len(x)%3)         # 73
-  , listsubscr      = lambda x: l[len(x)%3]             # 58
+    listgetattr_get = lambda x: l.__getitem__(len(x)%3) #0.0726 %avg=144
+  , listfuncget     = lambda x: l_get(len(x)%3)         #0.0743 %avg=148
+  , listsubscr      = lambda x: l[len(x)%3]             #0.0501          fastest
     )
 
 class property_vs_funccall:
@@ -71,16 +72,16 @@ class property_vs_funccall:
     prop = property( func)
 _g = property_vs_funccall()
 c_property_vs_funccall = dict(
-    property = lambda x: _g.prop        # 101
-  , funccall = lambda x: _g.func()      #  87   fastest
+    property = lambda x: _g.prop        #0.069          fastest
+  , funccall = lambda x: _g.func()      #0.076 %avg=109
     )
 
 _abc = ('a','b','c')
 c_a_in_abc_vs_a_eq_b_or = dict(
-    x_in_str   = lambda x: x in 'abc'                       # 437   fastest
-  , x_in_tuple = lambda x: x in ('a','b','c')               # 610
-  , x_in_tuple_global= lambda x: x in _abc                  # 585
-  , x_eq_a_or  = lambda x: x == 'a' or x =='b' or x == 'c'  # 596
+    x_in_str   = lambda x: x in 'abc'                       #0.0357          # 1 fastest
+  , x_in_tuple = lambda x: x in ('a','b','c')               #0.0484 %avg=135 # 3
+  , x_in_tuple_global= lambda x: x in _abc                  #0.0502 %avg=140 # 4
+  , x_eq_a_or  = lambda x: x == 'a' or x =='b' or x == 'c'  #0.0444 %avg=124 # 2
     )
 
 from collections import namedtuple
@@ -112,41 +113,29 @@ class datakl_s_f:
     x: int
     y: int
 c_tuple_vs_slots = dict(
-    slots= lambda x: slots( len(x), 4-len(x))                       #.15    0.1216 0.1211 fastest4
-  , plain= lambda x: plain( len(x), 4-len(x))                       #.162   0.1281 0.1273
-  , tuple= lambda x: ( len(x), 4-len(x))                            #.078   0.0649 0.0655 fastest
-  , dict = lambda x: dict( x=len(x), y=4-len(x))                    #.124   0.1224 0.1233 fastest5
-  , namedtuple= lambda x: xy( len(x), 4-len(x))                     #.22    0.2363 0.2350
-  , dataclass = lambda x: datakl( len(x), 4-len(x))                 #.159   0.1287 0.1276
-  , dataclass_frozen= lambda x: dataklfrz( len(x), 4-len(x))        #.33    0.2696 0.2666
-  , dataclass_kw    = lambda x: datakl( x=len(x), y=4-len(x))       #.?     0.2552 0.2502
-  , slots_kw        = lambda x: slots( x=len(x), y=4-len(x))        #?      0.2447 0.2441
-  , slots_kw1       = lambda x: slots( len(x), y=4-len(x))          #?      0.2405 0.2387
-  , plain_kw        = lambda x: plain( x=len(x), y=4-len(x))        #?
-  , dict_literal    = lambda x: { 'x':len(x), 'y':4-len(x)}         #?      0.1084 0.1103 fastest2
-  , dataclass_slots = lambda x: dataklslt( len(x), 4-len(x))        #?      0.1204 0.1214 fastest3
-  , dataclass_slots_frozen = lambda x: datakl_s_f( len(x),4-len(x)) #?      0.2577 0.2604
+    slots= lambda x: slots( len(x), 4-len(x))                       #0.1206 %avg=185 # 4
+  , plain= lambda x: plain( len(x), 4-len(x))                       #0.1262 %avg=194 # 6
+  , tuple= lambda x: ( len(x), 4-len(x))                            #0.0650 %avg=    # 1 fastest
+  , dict = lambda x: dict( x=len(x), y=4-len(x))                    #0.1224 %avg=188 # 5
+  , namedtuple= lambda x: xy( len(x), 4-len(x))                     #0.2366 %avg=363 # 8
+  , dataclass = lambda x: datakl( len(x), 4-len(x))                 #0.1270 %avg=195 # 7
+  , dataclass_frozen= lambda x: dataklfrz( len(x), 4-len(x))        #0.2690 %avg=413 #14
+  , dataclass_kw    = lambda x: datakl( x=len(x), y=4-len(x))       #0.2542 %avg=391 #12
+  , slots_kw        = lambda x: slots( x=len(x), y=4-len(x))        #0.2435 %avg=374 #10
+  , slots_kw1       = lambda x: slots( len(x), y=4-len(x))          #0.2393 %avg=368 # 9
+  , plain_kw        = lambda x: plain( x=len(x), y=4-len(x))        #0.2541 %avg=391 #11
+  , dict_literal    = lambda x: { 'x':len(x), 'y':4-len(x)}         #0.1091 %avg=167 # 2 fastest2
+  , dataclass_slots = lambda x: dataklslt( len(x), 4-len(x))        #0.1186 %avg=182 # 3
+  , dataclass_slots_frozen = lambda x: datakl_s_f( len(x),4-len(x)) #0.2605 %avg=400 #13
     )
 
-
-
-
-
-
-
-
-
-
-
-
-
 objs = dict( (k,c_tuple_vs_slots[k]('z')) for k in '''
-  slots                 #0.05554 0.06392 -slowest~
-  plain                 #0.05456 0.06082
-  namedtuple            #0.05245 0.06024
-  dataclass             #0.05481 0.06159
-  dataclass_slots       #0.05585 0.06272 -slowest~
-  dataclass_frozen      #0.05467 0.06089
+  slots                 #0.0627 %avg=102 -slowest~
+  plain                 #0.0614 %avg=100
+  namedtuple            #0.0610          -fastest
+  dataclass             #0.0615 %avg=100
+  dataclass_slots       #0.0631 %avg=103 -slowest~
+  dataclass_frozen      #0.0616 %avg=100
 '''.split() if k[0].isalpha())
 c_obj_attr_access = dict( (k, lambda x,*,j=o: getattr( j, 'x')) for k,o in objs.items())
 
@@ -155,10 +144,10 @@ def dictloop( x):
     for k in range( 75): r[k] = k*3
     return r
 c_dictcomp_vs_dict_gen_tuples_vs_loop = dict(
-    dictcomp = lambda x: { k:k*3 for k in range( 75)}               #2.94       fastest
-  , dict_gen_tuples= lambda x: dict( (k,k*3) for k in range( 75))   #6.0  +90%
-  , dict_listcomp  = lambda x: dict( [(k,k*3) for k in range( 75)]) #5.37 +80%
-  , dictloop = dictloop                                             #3.10       fastest2
+    dictcomp = lambda x: { k:k*3 for k in range( 75)}               #2.51 %avg=    fastest
+  , dict_gen_tuples= lambda x: dict( (k,k*3) for k in range( 75))   #4.77 %avg=189
+  , dict_listcomp  = lambda x: dict( [(k,k*3) for k in range( 75)]) #4.25 %avg=168
+  , dictloop = dictloop                                             #2.55 %avg=101 fastest2
   )
 def listloop1( x):
     r = []
@@ -170,20 +159,22 @@ def listloop2( x):
     for k in range( 75): r_append( k*3)
     return r
 c_listcomp_vs_list_gen_vs_loop= dict(
-    listcomp = lambda x: [ k*3 for k in range( 75)]         # 1.04 100%     fastest
-  , list_gen = lambda x: list( k*3 for k in range( 75))     # 1.8  +80%
-  , listloop1 = listloop1                                   # 1.17 +10%     fastest2
-  , listloop2 = listloop2                                   # 1.75 +50% WTF
+    listcomp = lambda x: [ k*3 for k in range( 75)]         #1.398           # 1  fastest
+  , list_gen = lambda x: list( k*3 for k in range( 75))     #2.465 %avg=176  # 4
+  , listloop1 = listloop1                                   #1.711 %avg=122  # 2  fastest2
+  , listloop2 = listloop2                                   #2.001 %avg=143  # 3
   )
 
 def afunc( a, b, c, d): return a+b+c+d
 def afunc2( a, b, c, d, **ignore): return a+b+c+d
 def afunc3( a, b, c, d, e=None  ): return a+b+c+d
 c_funccall_args_vs_kargs= dict(
-    args= lambda x: afunc( x,x,x,x)                         # .13   fastest
-  , kargs= lambda x: afunc( a=x,b=x,c=x,d=x)                # .15   fastest2
-  , kargs_ignored= lambda x: afunc2( a=x,b=x,c=x,d=x, e=x)  #.247   slow
-  , kargs_default= lambda x: afunc2( a=x,b=x,c=x,d=x, e=x)  #.247   same
+    args= lambda x: afunc( x,x,x,x)                         #0.1339           # 1 fastest
+  , kargs= lambda x: afunc( a=x,b=x,c=x,d=x)                #0.1547 %avg=115  # 3
+  , args_kargs= lambda x: afunc( x,b=x,c=x,d=x)             #0.1536 %avg=114  # 2
+  , kargs_ignored= lambda x: afunc2( a=x,b=x,c=x,d=x, e=x)  #0.2318 %avg=173  # 6
+  , kargs_default= lambda x: afunc3( a=x,b=x,c=x,d=x, e=x)  #0.1608 %avg=120  # 5
+  , kargs_default1= lambda x: afunc3( a=x,b=x,c=x,d=x)      #0.1555 %avg=116  # 4
   )
 
 ###############

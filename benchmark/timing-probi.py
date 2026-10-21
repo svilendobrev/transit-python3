@@ -17,14 +17,14 @@ c_pfx_check = dict(
   , f_list_global20=  lambda x: x[:2] in _lpfxsl            #.635
   , f_one_by_one=   lambda x: x[0]=='~' and x[1] in "#$:"   #.059  fastest
     )
-
-from transit.rolling_cache import encode_i2key_map, encode_key, SUB, MAP_AS_ARR
-c_encode_i2key = dict(
+if 0:
+ from transit.rolling_cache import encode_i2key_map, encode_key, SUB, MAP_AS_ARR
+ c_encode_i2key = dict(
     f_map = lambda x: encode_i2key_map[ len( x) ]   #.054    fastest
   , f_func= lambda x: encode_key( len( x) )         #.143
     )
 
-c_is_cache_key= dict(
+ c_is_cache_key= dict(
     f_org = lambda name: len(name) and (name[0] == SUB and name != MAP_AS_ARR)  # 73
   , f_nolen= lambda name: name and (name[0] == SUB and name != MAP_AS_ARR)      # 66 fastest
     )
@@ -103,15 +103,52 @@ class datakl:
 class dataklfrz:
     x: int
     y: int
+@dataclass(slots=True)
+class dataklslt:
+    x: int
+    y: int
+@dataclass(slots=True,frozen=True)
+class datakl_s_f:
+    x: int
+    y: int
 c_tuple_vs_slots = dict(
-    slots= lambda x: slots( len(x), 4-len(x))       #.15            fastest3
-  , plain= lambda x: plain( len(x), 4-len(x))       #.162
-  , tuple= lambda x: ( len(x), 4-len(x))            #.078           fastest
-  , dict = lambda x: dict( x=len(x), y=4-len(x))    #.124           fastest2
-  , namedtuple= lambda x: xy( len(x), 4-len(x))     #.22
-  , dataclass = lambda x: datakl( len(x), 4-len(x)) #.159           fastest4
-  , dataclassfrozen = lambda x: dataklfrz( len(x), 4-len(x))  #.33
+    slots= lambda x: slots( len(x), 4-len(x))                       #.15    0.1216 0.1211 fastest4
+  , plain= lambda x: plain( len(x), 4-len(x))                       #.162   0.1281 0.1273
+  , tuple= lambda x: ( len(x), 4-len(x))                            #.078   0.0649 0.0655 fastest
+  , dict = lambda x: dict( x=len(x), y=4-len(x))                    #.124   0.1224 0.1233 fastest5
+  , namedtuple= lambda x: xy( len(x), 4-len(x))                     #.22    0.2363 0.2350
+  , dataclass = lambda x: datakl( len(x), 4-len(x))                 #.159   0.1287 0.1276
+  , dataclass_frozen= lambda x: dataklfrz( len(x), 4-len(x))        #.33    0.2696 0.2666
+  , dataclass_kw    = lambda x: datakl( x=len(x), y=4-len(x))       #.?     0.2552 0.2502
+  , slots_kw        = lambda x: slots( x=len(x), y=4-len(x))        #?      0.2447 0.2441
+  , slots_kw1       = lambda x: slots( len(x), y=4-len(x))          #?      0.2405 0.2387
+  , plain_kw        = lambda x: plain( x=len(x), y=4-len(x))        #?
+  , dict_literal    = lambda x: { 'x':len(x), 'y':4-len(x)}         #?      0.1084 0.1103 fastest2
+  , dataclass_slots = lambda x: dataklslt( len(x), 4-len(x))        #?      0.1204 0.1214 fastest3
+  , dataclass_slots_frozen = lambda x: datakl_s_f( len(x),4-len(x)) #?      0.2577 0.2604
     )
+
+
+
+
+
+
+
+
+
+
+
+
+
+objs = dict( (k,c_tuple_vs_slots[k]('z')) for k in '''
+  slots                 #0.05554 0.06392 -slowest~
+  plain                 #0.05456 0.06082
+  namedtuple            #0.05245 0.06024
+  dataclass             #0.05481 0.06159
+  dataclass_slots       #0.05585 0.06272 -slowest~
+  dataclass_frozen      #0.05467 0.06089
+'''.split() if k[0].isalpha())
+c_obj_attr_access = dict( (k, lambda x,*,j=o: getattr( j, 'x')) for k,o in objs.items())
 
 def dictloop( x):
     r = {}
@@ -164,12 +201,26 @@ words = txt.split()
 import timeit
 def runner(f): return [ f( w) for w in words ]
 
+@dataclass
+class ttt:
+    min: float
+    max: float
+    avg: float
+
 for name,target in globals().copy().items():
     if not name.startswith( 'c_'): continue
     if TARGET:
         if TARGET!=name if isinstance( TARGET, str) else (TARGET is not target): continue
     print( '::::', name, '::::')
+    res = {}
     for k,f in target.items():
-        print( ' ', k.ljust(20), sorted(timeit.repeat( lambda: runner(f), number= 5000))[0])
+        r = sorted(timeit.repeat( lambda: runner(f), number= 5000))
+        res[k] = ttt( min= r[0], max= r[-1], avg= sum(r)/len(r))
+    rsorted = sorted( res, key= lambda k: res[k].avg )  #was .min
+    for k,r in res.items():
+        avg_ratio = 100*r.avg/res[rsorted[0]].avg
+        avg_ratio = int(avg_ratio) if avg_ratio != 100 else ' '
+        avg_index = 1+rsorted.index(k)
+        print( f' {k:<22} avg={r.avg:<9.6f} min={r.min:<9.6f} max={r.max:<9.6f}  %avg={avg_ratio:3}  #{avg_index:2}' )
 
 # vim:ts=4:sw=4:expandtab

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-#from __future__ import print_function #,unicode_literals
+from __future__ import print_function #,unicode_literals
 
 # average timings
 _pfxst= ("~#", "~$", "~:")
@@ -8,6 +8,7 @@ _pfxsl= ["~#", "~$", "~:"]
 _pfxsd= dict.fromkeys( _pfxst)
 _lpfxst= _pfxst*20
 _lpfxsl= _pfxsl*20
+
 c_pfx_check = dict(
     f_tuple=        lambda x: x[:2] in ("~#", "~$", "~:")   #0.0864 %avg=216 # 3
   , f_list=         lambda x: x[:2] in ["~#", "~$", "~:"]   #0.0868 %avg=217 # 4
@@ -18,6 +19,7 @@ c_pfx_check = dict(
   , f_list_global20=  lambda x: x[:2] in _lpfxsl            #0.6340 %avg=1589
   , f_one_by_one=   lambda x: x[0]=='~' and x[1] in "#$:"   #0.0399          # 1 fastest
     )
+
 if 0:
  from transit.rolling_cache import encode_i2key_map, encode_key, SUB, MAP_AS_ARR
  c_encode_i2key = dict(
@@ -30,7 +32,8 @@ if 0:
   , f_nolen= lambda name: name and (name[0] == SUB and name != MAP_AS_ARR)      # 66 fastest
     )
 
-#just def func -> class.staticmethod -> 10% slower! XXX
+
+#just def func -> class.@staticmethod -> slower!
 def func1( x): return x and x != 'asd' and len(x)
 class klas1:
     func1 = staticmethod( func1)
@@ -38,6 +41,7 @@ c_func_glob_vs_staticmethod= dict(
     f_glob_func=   lambda x: func1(x)               # 0.0695          fastest
   , f_staticmethd= lambda x: klas1.func1(x)         # 0.0845 %avg=121
     )
+
 
 def for_loop(x):
     for a in x:
@@ -48,6 +52,7 @@ c_for_loop_vs_gen_for = dict(
   , gen_loop = lambda x: any( [len(a)>9 for a in x ])   #0.2767 %avg=147
     )
 
+
 d = dict( a=1, b=2, c=35)
 d_get = d.get
 c_dictget_vs_dict_subscr = dict(
@@ -57,6 +62,7 @@ c_dictget_vs_dict_subscr = dict(
   , dictsubscr          = lambda x: d[ 'a']             #0.0383          fastest
     )
 
+
 l = [ 1, 2, 3]
 l_get = l.__getitem__
 c_listget_vs_list_subscr = dict(
@@ -64,6 +70,7 @@ c_listget_vs_list_subscr = dict(
   , listfuncget     = lambda x: l_get(len(x)%3)         #0.0743 %avg=148
   , listsubscr      = lambda x: l[len(x)%3]             #0.0501          fastest
     )
+
 
 class property_vs_funccall:
     def func( me):
@@ -76,6 +83,7 @@ c_property_vs_funccall = dict(
   , funccall = lambda x: _g.func()      #0.076 %avg=109
     )
 
+
 _abc = ('a','b','c')
 c_a_in_abc_vs_a_eq_b_or = dict(
     x_in_str   = lambda x: x in 'abc'                       #0.0357          # 1 fastest
@@ -84,8 +92,8 @@ c_a_in_abc_vs_a_eq_b_or = dict(
   , x_eq_a_or  = lambda x: x == 'a' or x =='b' or x == 'c'  #0.0444 %avg=124 # 2
     )
 
+
 from collections import namedtuple
-from dataclasses import dataclass
 class plain:
     def __init__(me, x,y):
         me.x=x
@@ -96,48 +104,67 @@ class slots:
         me.x=x
         me.y=y
 xy = namedtuple( 'xy', ['x','y'])
+
+#comment dataclasses for py2
+from dataclasses import dataclass
 @dataclass
 class datakl:
-    x: int
-    y: int
+   x: int
+   y: int
 @dataclass(frozen=True)
 class dataklfrz:
-    x: int
-    y: int
+   x: int
+   y: int
 @dataclass(slots=True)
 class dataklslt:
-    x: int
-    y: int
+   x: int
+   y: int
 @dataclass(slots=True,frozen=True)
 class datakl_s_f:
-    x: int
-    y: int
+   x: int
+   y: int
+
 c_tuple_vs_slots = dict(
     slots= lambda x: slots( len(x), 4-len(x))                       #0.1206 %avg=185 # 4
   , plain= lambda x: plain( len(x), 4-len(x))                       #0.1262 %avg=194 # 6
   , tuple= lambda x: ( len(x), 4-len(x))                            #0.0650 %avg=    # 1 fastest
   , dict = lambda x: dict( x=len(x), y=4-len(x))                    #0.1224 %avg=188 # 5
   , namedtuple= lambda x: xy( len(x), 4-len(x))                     #0.2366 %avg=363 # 8
-  , dataclass = lambda x: datakl( len(x), 4-len(x))                 #0.1270 %avg=195 # 7
-  , dataclass_frozen= lambda x: dataklfrz( len(x), 4-len(x))        #0.2690 %avg=413 #14
-  , dataclass_kw    = lambda x: datakl( x=len(x), y=4-len(x))       #0.2542 %avg=391 #12
   , slots_kw        = lambda x: slots( x=len(x), y=4-len(x))        #0.2435 %avg=374 #10
   , slots_kw1       = lambda x: slots( len(x), y=4-len(x))          #0.2393 %avg=368 # 9
   , plain_kw        = lambda x: plain( x=len(x), y=4-len(x))        #0.2541 %avg=391 #11
   , dict_literal    = lambda x: { 'x':len(x), 'y':4-len(x)}         #0.1091 %avg=167 # 2 fastest2
+  , dataclass       = lambda x: datakl( len(x), 4-len(x))           #0.1270 %avg=195 # 7
+  , dataclass_frozen= lambda x: dataklfrz( len(x), 4-len(x))        #0.2690 %avg=413 #14
+  , dataclass_kw    = lambda x: datakl( x=len(x), y=4-len(x))       #0.2542 %avg=391 #12
   , dataclass_slots = lambda x: dataklslt( len(x), 4-len(x))        #0.1186 %avg=182 # 3
   , dataclass_slots_frozen = lambda x: datakl_s_f( len(x),4-len(x)) #0.2605 %avg=400 #13
     )
 
+
 objs = dict( (k,c_tuple_vs_slots[k]('z')) for k in '''
-  slots                 #0.0627 %avg=102 -slowest~
+  slots                 #0.0627 %avg=102
   plain                 #0.0614 %avg=100
   namedtuple            #0.0610          -fastest
-  dataclass             #0.0615 %avg=100
+  dataclass             #0.0615 %avg=101
   dataclass_slots       #0.0631 %avg=103 -slowest~
   dataclass_frozen      #0.0616 %avg=100
-'''.split() if k[0].isalpha())
-c_obj_attr_access = dict( (k, lambda x,*,j=o: getattr( j, 'x')) for k,o in objs.items())
+'''.split() if k[0].isalpha() and k in c_tuple_vs_slots)
+c_obj_attr_access = dict( (k, lambda x,  j=o: getattr( j, 'x')) for k,o in objs.items())
+
+
+def afunc( a, b, c, d): return a+b+c+d
+def afunc2( a, b, c, d, **ignore): return a+b+c+d
+def afunc3( a, b, c, d, e=None  ): return a+b+c+d
+c_funccall_args_vs_kargs= dict(
+    args= lambda x: afunc( x,x,x,x)                         #0.1339           # 1 fastest
+  , kargs= lambda x: afunc( a=x,b=x,c=x,d=x)                #0.1547 %avg=115  # 3
+  , args_kargs= lambda x: afunc( x,b=x,c=x,d=x)             #0.1536 %avg=114  # 2
+  , kargs_ignored= lambda x: afunc2( a=x,b=x,c=x,d=x, e=x)  #0.2318 %avg=173  # 6
+  , kargs_default= lambda x: afunc3( a=x,b=x,c=x,d=x, e=x)  #0.1608 %avg=120  # 5
+  , kargs_default1= lambda x: afunc3( a=x,b=x,c=x,d=x)      #0.1555 %avg=116  # 4
+  )
+
 
 def dictloop( x):
     r = {}
@@ -149,6 +176,8 @@ c_dictcomp_vs_dict_gen_tuples_vs_loop = dict(
   , dict_listcomp  = lambda x: dict( [(k,k*3) for k in range( 75)]) #4.25 %avg=168
   , dictloop = dictloop                                             #2.55 %avg=101 fastest2
   )
+
+
 def listloop1( x):
     r = []
     for k in range( 75): r.append( k*3)
@@ -165,23 +194,10 @@ c_listcomp_vs_list_gen_vs_loop= dict(
   , listloop2 = listloop2                                   #2.001 %avg=143  # 3
   )
 
-def afunc( a, b, c, d): return a+b+c+d
-def afunc2( a, b, c, d, **ignore): return a+b+c+d
-def afunc3( a, b, c, d, e=None  ): return a+b+c+d
-c_funccall_args_vs_kargs= dict(
-    args= lambda x: afunc( x,x,x,x)                         #0.1339           # 1 fastest
-  , kargs= lambda x: afunc( a=x,b=x,c=x,d=x)                #0.1547 %avg=115  # 3
-  , args_kargs= lambda x: afunc( x,b=x,c=x,d=x)             #0.1536 %avg=114  # 2
-  , kargs_ignored= lambda x: afunc2( a=x,b=x,c=x,d=x, e=x)  #0.2318 %avg=173  # 6
-  , kargs_default= lambda x: afunc3( a=x,b=x,c=x,d=x, e=x)  #0.1608 %avg=120  # 5
-  , kargs_default1= lambda x: afunc3( a=x,b=x,c=x,d=x)      #0.1555 %avg=116  # 4
-  )
 
 ###############
 
 TARGET = None
-#TARGET = c_dictcomp_vs_dict_gen_tuples_vs_loop
-#TARGET = c_listcomp_vs_list_gen_vs_loop
 #TARGET = c_dictget_vs_dict_subscr
 
 import sys
@@ -192,11 +208,7 @@ words = txt.split()
 import timeit
 def runner(f): return [ f( w) for w in words ]
 
-@dataclass
-class ttt:
-    min: float
-    max: float
-    avg: float
+ttt = namedtuple( 'ttt', ['min','max','avg'])
 
 for name,target in globals().copy().items():
     if not name.startswith( 'c_'): continue
@@ -212,6 +224,6 @@ for name,target in globals().copy().items():
         avg_ratio = 100*r.avg/res[rsorted[0]].avg
         avg_ratio = int(avg_ratio) if avg_ratio != 100 else ' '
         avg_index = 1+rsorted.index(k)
-        print( f' {k:<22} avg={r.avg:<9.6f} min={r.min:<9.6f} max={r.max:<9.6f}  %avg={avg_ratio:3}  #{avg_index:2}' )
+        print( ' {k:<22} avg={r.avg:<9.6f} min={r.min:<9.6f} max={r.max:<9.6f}  %avg={avg_ratio:3}  #{avg_index:2}'.format(**locals()) )
 
 # vim:ts=4:sw=4:expandtab
